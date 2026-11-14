@@ -98,6 +98,59 @@ Installed files:
 | `/Library/LaunchAgents/io.github.simon-lumikello.moonkey.agent.plist` | starts Moonkey.app for each user at login |
 | `/Library/Application Support/Moonkey/state` | shared setting, e.g. `60 1` (level, on); writable by all users |
 
+## Adding support for another Mac
+
+Moonkey only ships code that has been tested on real hardware. If your MacBook isn't supported, you (or a coding agent working for you) can add it by following these steps. Agents: read this whole section before changing any code, and follow it in order.
+
+### 1. Collect evidence
+
+Run these on the unsupported Mac and keep the output; it goes into the pull request:
+
+```sh
+sysctl -n hw.model                                   # e.g. MacBookAir9,1
+sw_vers -productVersion
+hidutil list | awk 'NR<=2 || /0x5ac/'                # Apple HID devices and their usages
+ioreg -r -c IOHIDInterface -d 1 -l -w0 | grep -E '"(Product|VendorID|PrimaryUsagePage|PrimaryUsage|ReportDescriptor)"'
+```
+
+Look for an Apple interface with a vendor usage page (`65280` = `0xFF00`, or similar) that has no driver, and decode its `ReportDescriptor` (any HID descriptor parser works). The backlight interface exposes feature reports for a level and usually an on/off flag. If you find `0x8102` with usage `65280`/`15`, the existing code should already work; open an issue instead.
+
+The Linux T2 drivers ([t2linux](https://wiki.t2linux.org/), `drivers/hid/hid-apple.c`) are a good reference for how other Apple models expose the backlight. Treat them as a lead, and confirm everything on your own hardware.
+
+### 2. Probe safely
+
+- Read before you write: use `IOHIDDeviceGetReport` on the candidate feature reports and record what they return.
+- Only send **feature** reports, only to the interface you identified, and only with report IDs and value ranges that its descriptor declares.
+- Open the device without seizing it (`kIOHIDOptionsTypeNone`). Don't install kernel extensions, disable SIP or change system settings.
+- Change one thing at a time. A reboot always returns the hardware to its normal state.
+
+### 3. Implement
+
+All hardware-specific code lives in `src/backlight.h`: `bl_open()` finds the device and `bl_apply()` drives it. The CLI, daemon, app and state file only call those two functions, so **don't change anything outside `backlight.h` to add a model**.
+
+- When you add the second protocol, turn the existing constants into a small table of backends, each with its device-matching values, raw level range and an apply function. `bl_open()` tries the backends in order; `bl_apply()` calls the matched backend's function. Keep both public function signatures.
+- The existing `0x8102` backend must keep behaving exactly as it does now.
+- Document the new protocol at the top of `backlight.h` in the same format as the existing one: device, usages, report layouts, value ranges.
+- Keep the style: C in the core, Objective-C only in `src/app/`, comments explaining *why*, and no new dependencies.
+
+### 4. Test on the new Mac
+
+All of these must pass on the real hardware:
+
+- `make` builds with no warnings.
+- `moonkey 1`, `moonkey 100`, `moonkey 0`, `moonkey on`, `moonkey up`, `moonkey down` and `moonkey toggle` each change the light as expected.
+- After `sudo make install`, the setting survives a sleep/wake cycle and a reboot.
+- The menu bar slider works, and so does the Touch Bar slider if the Mac has a Touch Bar.
+- `sudo make uninstall` removes everything.
+
+### 5. Open a pull request
+
+- One model family per pull request, titled like `Add support for MacBookAir9,1`.
+- In the description, include the evidence from step 1 (trimmed to the relevant interface), the decoded report layout, and which checks from step 4 you ran, on which model and macOS version.
+- Say clearly that the existing `0x8102` backend wasn't re-tested on a Touch Bar Mac if you don't have one; a maintainer will check it.
+- Update this README: add the model to [Requirements](#requirements) as tested, and add the new device and reports to [How it works](#how-it-works).
+- Don't include untested code paths, guessed values for models you don't have, or unrelated refactors.
+
 ## Limitations
 
 - macOS has no public API for Control Strip buttons, so the Touch Bar button uses the same private APIs as other Touch Bar customisers. A future macOS update could break it; the menu bar icon, the CLI and the restore daemon don't depend on those APIs.
