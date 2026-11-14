@@ -100,7 +100,7 @@ Installed files:
 
 ## Adding support for another Mac
 
-Moonkey only ships code that has been tested on real hardware. If your MacBook isn't supported, you (or a coding agent working for you) can add it by following these steps. Agents: read this whole section before changing any code, and follow it in order.
+Moonkey only ships code that has been tested on real hardware. If your MacBook isn't supported, you can add it by following these steps. Coding agents pick up the project's rules from [AGENTS.md](AGENTS.md), which points them here.
 
 ### 1. Collect evidence
 
