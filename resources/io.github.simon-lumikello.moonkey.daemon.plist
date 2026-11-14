@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- System daemon (root): restores the backlight at boot and after every wake. -->
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>io.github.simon-lumikello.moonkey.daemon</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/usr/local/bin/moonkey</string>
+		<string>daemon</string>
+	</array>
+	<key>RunAtLoad</key>
+	<true/>
+	<!-- Restart after crashes, but not after a clean exit (unsupported Mac). -->
+	<key>KeepAlive</key>
+	<dict>
+		<key>SuccessfulExit</key>
+		<false/>
+	</dict>
+	<key>ProcessType</key>
+	<string>Background</string>
+</dict>
+</plist>

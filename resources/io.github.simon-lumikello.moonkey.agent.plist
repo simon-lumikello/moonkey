@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Per-user agent: runs Moonkey.app (Touch Bar and menu bar controls) in every GUI session. -->
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>io.github.simon-lumikello.moonkey.agent</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/Applications/Moonkey.app/Contents/MacOS/Moonkey</string>
+	</array>
+	<key>LimitLoadToSessionType</key>
+	<string>Aqua</string>
+	<key>RunAtLoad</key>
+	<true/>
+	<!-- Restart after crashes, but not after a clean exit (nothing to show). -->
+	<key>KeepAlive</key>
+	<dict>
+		<key>SuccessfulExit</key>
+		<false/>
+	</dict>
+	<key>ProcessType</key>
+	<string>Interactive</string>
+</dict>
+</plist>
